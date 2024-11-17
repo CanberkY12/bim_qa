@@ -95,9 +95,9 @@ def upload(
     
 
 
-username="neo4j"
-password="sz7lL8-kJT9q5e7jN-j6VGoaEJ4XEXNRgHgJJugMp0U"
-url="neo4j+s://be20d4fc.databases.neo4j.io"
+username=os.getenv("username")
+password=os.getenv("password")
+url=os.getenv("url")
 
 graph_store = Neo4jPGStore(
     username=username,
@@ -107,8 +107,7 @@ graph_store = Neo4jPGStore(
 
 import os
 
-os.environ["OPENAI_API_KEY"] = "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"
-
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 JSONpath = "C:/Users/berky/Downloads/properties.json"
 
 # Load the JSON data from the file
