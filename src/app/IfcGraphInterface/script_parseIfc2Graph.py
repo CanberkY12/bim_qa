@@ -1,10 +1,12 @@
 """ package import """
 import logging
+import jsonpickle
+import sys
 import time
 from datetime import datetime
 
 """ class import """
-from IfcGraphInterface.Ifc2GraphTranslator import IFCGraphGenerator
+from Ifc2GraphTranslator import IFCGraphGenerator
 from neo4j_middleware.neo4jConnector import Neo4jConnector
 
 # --- Script ---
@@ -16,6 +18,18 @@ logging.info('Started')
 
 
 def main():
+    try:
+        #Reciveing user input from the web page and returning a response ( page.tsx -> promptreceiver.js -> runPython.js -> lchain2cypher.py )
+        #user_input = sys.argv[1]  # Read the argument passed by the Node.js script
+        # Process data (add your logic here)
+        #result = {"status": "success", "input_received": user_input}
+        # Output result as JSON or Simply print the user input 
+        print('IFC input is received...(Script_parseIFC) \n')
+    except:
+        print('No input received... \n')
+
+
+    
     print('Parsing Ifc StepP21 model to Neo4j.... \n')
     print('connecting to neo4j database... ')
     connector = Neo4jConnector()
@@ -28,15 +42,10 @@ def main():
     #    paths.append(filepath)
     # print(paths)
 
-    # paths = [
-    #     '00_sampleData/IFC_stepP21/diss-casestudy/TW-v1.ifc',
-    #     '00_sampleData/IFC_stepP21/diss-casestudy/TW-v2.ifc'
-    # ]
     paths = [
-        '00_sampleData/IFC_stepP21/diss-casestudy/ARC-v1-purified.ifc',
-        '00_sampleData/IFC_stepP21/diss-casestudy/ARC-v2-purified.ifc',
-        '00_sampleData/IFC_stepP21/diss-casestudy/ARC-v3-purified.ifc'
+        "C:/Users/berky/Downloads/small.ifc"
     ]
+    
 
     for p in paths:
         print(p)

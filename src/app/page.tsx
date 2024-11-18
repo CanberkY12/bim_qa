@@ -217,7 +217,6 @@ export default function Home() {
 
     const panel = BUI.Component.create<BUI.PanelSection>(() => {
       const [loadIfcBtn] = CUI.buttons.loadIfc({ components });
-    
 
       return BUI.html`
       <bim-panel active label="IFC Loader" class="options-menu" style="position: absolute; top: 23rem; right: 1rem; width: 15rem;">
@@ -230,8 +229,8 @@ export default function Home() {
             }}">
           </bim-button>  
           <bim-panel-section label="Importing">
-            ${loadIfcBtn}
-
+            ${loadIfcBtn} 
+            
           </bim-panel-section>
           <bim-button label="Export fragments"
             @click="${() => {

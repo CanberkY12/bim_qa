@@ -25,17 +25,6 @@ export default async function sendInput(userInput) {
 }
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
   /*
     const data_to_pass_in = {
       data_sent: userInput,

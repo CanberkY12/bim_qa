@@ -1,5 +1,6 @@
 import logging
 import re
+import os
 
 from neo4j import GraphDatabase
 from neo4jGraphDiff.Config.Configuration import Configuration
@@ -15,8 +16,7 @@ logger = logsetting.initialize_logger(logger)
 class Neo4jConnector:
     """ handles the connection to a given neo4j database """
     # member variables
-    password = "sz7lL8-kJT9q5e7jN-j6VGoaEJ4XEXNRgHgJJugMp0U"
-    uri = "neo4j+s://be20d4fc.databases.neo4j.io"
+    
     my_driver = []
 
     # constructor
@@ -29,8 +29,11 @@ class Neo4jConnector:
         creates a new connection to the database
         @return:
         """
+        username=os.getenv("username")
+        password=os.getenv("password")
+        url=os.getenv("url")
         try:
-            self.my_driver = GraphDatabase.driver(self.uri, auth=("neo4j", self.password), encrypted=False)
+            self.my_driver = GraphDatabase.driver(url, auth=(username, password))
         except self.my_driver:
             logger.error('Connection failed')
             raise Exception("Oops!  Connection failed.  Try again...")

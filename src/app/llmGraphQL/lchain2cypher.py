@@ -6,8 +6,10 @@ import json
 import numpy as np
 import pandas as pd
 
+# Local imports
+from hybrid_rag import RunHybridRAG
 
-
+# Package imports
 from typing import Set, Any, Union, Dict, List, Tuple, Hashable
 from langchain_community.graphs import Neo4jGraph
 from langchain.prompts import ChatPromptTemplate
@@ -39,14 +41,14 @@ except Exception as e:
 
 
 # Initialize language model (e.g., LLaMA 3.2) for text generation and embeddings
-#llm_pipeline = pipeline("text-generation", model="LLaMA-3.2")  # Specify correct model here
-#llm = HuggingFacePipeline(pipeline=llm_pipeline)
+# llm_pipeline = pipeline("text-generation", model="LLaMA-3.2")  # Specify correct model here
+# llm = HuggingFacePipeline(pipeline=llm_pipeline)
 
 # Connect to the neo4j graph
 
-username="neo4j"
-password="sz7lL8-kJT9q5e7jN-j6VGoaEJ4XEXNRgHgJJugMp0U"
-url="neo4j+s://be20d4fc.databases.neo4j.io"
+username=os.getenv("username")
+password=os.getenv("password")
+url=os.getenv("url")
 
 # os.environ["LANGSMITH_API_KEY"] = getpass.getpass("Enter your LangSmith API key: ")
 # os.environ["LANGSMITH_TRACING"] = "true"
@@ -55,7 +57,7 @@ graph = Neo4jGraph(url=url,username=username,password=password,sanitize=True)
 driver = GraphDatabase.driver(url, auth=(username, password))
 print(graph.schema)
 
-os.environ["GROQ_API_KEY"] = "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"
+os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 print("API key received")
 
 llm = ChatGroq(
