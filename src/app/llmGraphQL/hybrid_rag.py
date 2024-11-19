@@ -51,9 +51,6 @@ class RunHybridRAG:
                 print("Vector index 'ifcModelEmbeddings' already exists.")
   
 
-
-
-    
     # Create a full-text index
     def create_fulltext_index(self):
         query = """
@@ -65,7 +62,7 @@ class RunHybridRAG:
                 print("Full-text index 'ifcFulltext' created successfully.")
             except:
                 print("Full-text index 'ifcFulltext' already exists.")
-    
+
     def main(self):
         import ollama
         #model_name = "mxbai-embed-large"
@@ -85,7 +82,7 @@ class RunHybridRAG:
             
        
         with self.driver.session() as session:
-            ollama.pull(model_name)
+            #ollama.pull(model_name)
             embedder = OllamaEmbeddings(model=model_name)
             retriever = HybridRetriever(
                 self.driver,
@@ -110,5 +107,3 @@ if __name__ == "__main__":
     result = rag.main()
     print(result)
     rag.close()
-
-    

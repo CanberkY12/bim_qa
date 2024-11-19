@@ -1,6 +1,6 @@
 "use client"
  
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Input } from "@/components/ui/input"
 import MaxWidthWrapper from "./components/MaxWidthWrapper";
 import ClickComponent from "./components/ButtonReciever";
@@ -24,20 +24,79 @@ import * as OBCF from "@thatopen/components-front";
 import { FragmentsGroup } from "@thatopen/fragments";
 import { viewport } from '../../thatOpenSrc/engine_ui-components/packages/obc/src/components/tables/ElementProperties/example';
 import sendInput from "C:/Users/berky/oxide/src/app/llmGraphQL/promptreceiver.js"
+import NeoVis, { NeovisConfig } from "neovis.js/dist/neovis.js";
 //import * as lchain2cypher from 'C:/Users/berky/oxide/src/app/llmGraphQL/lchain2cypher.py';
 
 
 
 export default function Home() {
   const [propertiesTable, setPropertiesTable] = useState<any>({ expanded: false, queryString: "", tsv: "" });
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const config = {
+      encrypted:"ENCRYPTION_ON",
+      trust: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
+      containerId: containerRef.current.id,
+     neo4j: {
+         serverUrl: "neo4j://be20d4fc.databases.neo4j.io",
+         serverUser: "neo4j",
+         serverPassword: "sz7lL8-kJT9q5e7jN-j6VGoaEJ4XEXNRgHgJJugMp0U",
+     },
+      labels: {
+        nodes: {
+          label: "IFCTYPE",
+          size: "pagerank",
+        },
+      },
+      relationships: {
+        CONNECTED: {},
+      },
+      initialCypher: "MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 50",
+    };
+
+    const viz = new NeoVis(config);
+
+    // Render the graph
+    viz.render();
+
+    // Optional: Add event listeners
+    viz.registerOnEvent("completed" as any, () => {
+      console.log("Graph rendering completed!");
+    });
+    // Cleanup on component unmount
+    return () => {
+      viz.clearNetwork();
+    };
+  }, []);
+
+  
+
+
+
+
 
   useEffect(() => {
     BUI.Manager.init();
+    
     // Three.js World anf ifc model rendering
     const components = new OBC.Components();
     
     const container = document.getElementById("container")!;
-    
+    //if (!container) {
+    //  const newContainer = document.createElement("div");
+    //  newContainer.id = "container";
+    //  document.body.appendChild(newContainer);
+    //}
+
+    // Create a container for the canvas
+    //const container = document.createElement("container");
+    //container.style.width = "80vw";
+    //container.style.height = "80vh";
+    //document.body.append(container);
+
     const worlds = components.get(OBC.Worlds);
 
     const viewport = document.createElement("bim-viewport");
@@ -68,6 +127,8 @@ export default function Home() {
 
     const grids = components.get(OBC.Grids);
     grids.create(world);
+
+  
 
     world.scene.three.background = null;
 
@@ -114,14 +175,12 @@ export default function Home() {
       // Properties table section
       const indexer = components.get(OBC.IfcRelationsIndexer);
       indexer.process(model);
-      const modelID = webIfc.OpenModel(buffer);
-      return modelID;
     }
 
 
-    /*async function loadIfc() {
+    /*async function loadIfc(importedIFC) {
       const file = await fetch(
-        "http://localhost:3000/"
+        
       );
       console.log(file);
       const data = await file.arrayBuffer();
@@ -133,24 +192,11 @@ export default function Home() {
       // Properties table section
       const indexer = components.get(OBC.IfcRelationsIndexer);
       indexer.process(model);
-      const modelID = webIfc.OpenModel(buffer);
-      return modelID;
     }*/
 
 
-    async function modelid(){
-    const ifcFile = await fetch(
-      "https://thatopen.github.io/engine_components/resources/small.ifc",
-    );
-    const ifcData = await ifcFile.arrayBuffer();
-    const ifcBuffer = new Uint8Array(ifcData);
-    const modelID = webIfc.OpenModel(ifcBuffer);
-    return modelID;}
-
-    const modelID = modelid();
-
-
-
+    // Functionalities for panel sections
+    
     const [propertiesTable, updatePropertiesTable] = CUI.tables.elementProperties({
       components,
       fragmentIdMap: {},
@@ -214,12 +260,45 @@ export default function Home() {
         await navigator.clipboard.writeText(propertiesTable.tsv);
       };
 
+      return BUI.html`
+          <bim-panel label="Properties" class="options-menu" style="position: absolute; top: 40rem; left: 1rem; width: 30rem;>
+            <bim-panel-section label="Element Data">
+              <div style="display: flex; gap: 0.5rem;">
+                <bim-button @click=${expandTable} label=${propertiesTable.expanded ? "Collapse" : "Expand"}></bim-button> 
+                <bim-button @click=${copyAsTSV} label="Copy as TSV"></bim-button> 
+              </div> 
+              <bim-text-input @input=${onTextInput} placeholder="Search Property" debounce="250"></bim-text-input>
+              ${propertiesTable}
+            </bim-panel-section>
+          </bim-panel>
+        `; });
+      const app = document.createElement("bim-grid");
+      app.layouts = {
+        main: {
+          template: `
+          "propertiesPanel viewport"
+          /25rem 1fr
+          `,
+          elements: { propertiesPanel, container },
+        },
+      };
+      
+
+      app.layout = "main";
+      document.body.append(app);
+
+
+
+
+     
+      
+
 
     const panel = BUI.Component.create<BUI.PanelSection>(() => {
       const [loadIfcBtn] = CUI.buttons.loadIfc({ components });
-
+    
       return BUI.html`
-      <bim-panel active label="IFC Loader" class="options-menu" style="position: absolute; top: 23rem; right: 1rem; width: 15rem;">
+      <bim-panel active label="IFC Loader" class="options-menu" style="position: absolute; top: 75rem; right: 1rem; width: 15rem;">
         <bim-panel-section collapsed label="Controls">
         <bim-panel-section style="padding-top: 12px;">
         
@@ -269,70 +348,75 @@ export default function Home() {
       `;
       });
 
-      document.body.append(panel);
-
-      const button = BUI.Component.create<BUI.PanelSection>(() => {
-      return BUI.html`
-        <bim-button class="phone-menu-toggler" icon="solar:settings-bold"
-          @click="${() => {
-          if (panel.classList.contains("options-menu-visible")) {
-            panel.classList.remove("options-menu-visible");
-          } else {
-            panel.classList.add("options-menu-visible");
-          }
-          }}">
-        </bim-button>
-        `;
-      });
-      
-      //document.body.append(button);
+      document.body.append(panel);});
 
       
-      
-        return BUI.html`
-          <bim-panel label="Properties" class="options-menu" style="position: absolute; top: 50rem; left: 1rem; width: 30rem;>
-            <bim-panel-section label="Element Data">
-              <div style="display: flex; gap: 0.5rem;">
-                <bim-button @click=${expandTable} label=${propertiesTable.expanded ? "Collapse" : "Expand"}></bim-button> 
-                <bim-button @click=${copyAsTSV} label="Copy as TSV"></bim-button> 
-              </div> 
-              <bim-text-input @input=${onTextInput} placeholder="Search Property" debounce="250"></bim-text-input>
-              ${propertiesTable}
-            </bim-panel-section>
-          </bim-panel>
-        `;
-      });
-
-      const app = document.createElement("bim-grid");
-      app.layouts = {
-        main: {
-          template: `
-          "propertiesPanel viewport"
-          /25rem 1fr
-          `,
-          elements: { propertiesPanel, viewport },
-        },
-      };
-
-      app.layout = "main";
-      document.body.append(app);
 
 
-    });
-    
-    
-    
 
   return (
-    <div className="mb-12 mt-28 sm:mt-40 flex flex-col items-center justify-center">
+    <div>
+      <div style={{background: "#fff"}}>
+        <h1>Graph Visualization</h1>
+        <div
+          id="graph-container"
+          ref={containerRef}
+          style={{ width: "100%", height: "80vh", border: "1px solid #ccc", backgroundColor: "#fff" }}
+        ></div>
+      </div>
+
+      <div className="mb-12 mt-28 sm:mt-40 flex flex-col items-center justify-center">
+        <div id="container" style={{ width: "90vw", height: "90vh", marginTop: "-160px"}}></div>
+      </div>
+      <div className="mb-12 mt-28 sm:mt-40 flex flex-col items-center justify-center" style={{ marginTop: "850px", marginBottom: "100px" }}>
+        <p className= "mt-5 max-w-prose text-zinc-700 sm:text-lg">  
+          You can query BIM data from below.
+        </p>
+        <div className="mt-5 flex items-center space-x-2" style ={{width: "600px"}}>
+
+        <Input 
+          type="text" 
+          placeholder="Enter text here..." 
+          className="p-2 border border-gray-300 rounded-md flex-grow"
+        />
+
+            <button 
+            className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700" 
+            onClick={() => {
+              const inputElement = document.querySelector('input[type="text"]') as HTMLInputElement;
+              if (inputElement) {
+              const userInput = inputElement.value;
+              console.log(userInput);
+              sendInput(userInput);
+              // You can add more logic here to handle the user input
+              inputElement.value = "";
+              }
+            }}
+
+            >
+            Send
+            </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+{/*      
+<div className="mb-12 mt-28 sm:mt-40 flex flex-col items-center justify-center">
       <div className="mb-12 mt-28 sm:mt-40 flex flex-col items-center justify-center"/>
         <h1 className="max-w-4xl text-5xl font-bold md:text-6xl lg:text-6xl mt-12" style={{ marginTop: "-220px", marginBottom: "50px" }}>
           Welcome to LLM4BIM
         </h1>
+  
+
         <p className= "mt-5 max-w-prose text-zinc-700 sm:text-lg" style={{ marginBottom: "25px" }}>  
           You can visualize your BIM model and query information here.
         </p>
-        <div id="container" style={{ width: "80vw", height: "60vh", marginTop: "5px" }}/>
+          
+
+        
         <p className= "mt-5 max-w-prose text-zinc-700 sm:text-lg">  
         You can query BIM data from below.
       </p>
@@ -362,11 +446,17 @@ export default function Home() {
         </button>
       </div>
     </div>
-  );
-}
 
 
-{/*      
+
+
+
+
+
+
+
+
+
               @click="${async () => {
                 const input = document.createElement('input');
                 input.type = 'file';
