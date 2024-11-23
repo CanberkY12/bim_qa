@@ -8,6 +8,7 @@ import { ArrowRight } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button";
 import { LoginLink } from "@kinde-oss/kinde-auth-nextjs";
 import { Html } from 'next/document';
+import { useRouter } from 'next/router';
 import { initializeOBC } from "C:/Users/berky/oxide/src/ui/script.js";
 import * as xeoScript from "C:/Users/berky/oxide/src/ui/xeoScript.js";
 import * as BUI from "@thatopen/ui";
@@ -45,16 +46,57 @@ export default function Home() {
          serverUser: "neo4j",
          serverPassword: "sz7lL8-kJT9q5e7jN-j6VGoaEJ4XEXNRgHgJJugMp0U",
      },
+     /*visConfig: {
+      nodes: {
+          shape: 'circle',
+      },
+      edges: {
+          arrows: {
+              to: {enabled: true}
+                }
+            },
+        },
+        labels: {
+            Character: {
+                label: 'any',
+                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
+                    cypher: {
+                        value: "MATCH (n) WHERE id(n) = $id RETURN n.size"
+                    },
+                    function: {
+                        title: (node: any) => {
+                            return `Node ID: ${node.id}`;
+                        }
+                    },
+                }
+            }
+        },
+        relationships: {
+            INTERACTS: {
+                value: 'all',
+                [NeoVis.NEOVIS_ADVANCED_CONFIG]: {
+                    function: {
+                        title: (edge: any) => {
+                            return `Edge from ${edge.from} to ${edge.to}`;
+                        }
+                    },
+                }
+            }
+        },
+        initialCypher: 'MATCH (n)-[r]->(m) RETURN n,r,m'
+};*/
+
+
       labels: {
         nodes: {
-          label: "IFCTYPE",
+          label: "any",
           size: "pagerank",
         },
       },
       relationships: {
         CONNECTED: {},
       },
-      initialCypher: "MATCH (n)-[r]->(m) RETURN n, r, m LIMIT 50",
+      initialCypher: "MATCH (n)-[r]->(m) RETURN n, r, m;",
     };
 
     const viz = new NeoVis(config);
@@ -161,11 +203,12 @@ export default function Home() {
     webIfc.SetWasmPath("https://unpkg.com/web-ifc@0.0.57/", true);
     webIfc.Init();
 
-
+// "https://drive.google.com/file/d/16dbPVxQLbBlOygnD0jysEbqL5betT8a5/view?usp=sharing" "https://drive.google.com/file/d/1kmELgMgmpr3IR9pEwTm8_xPIuKcOUC9v/view?usp=sharing"
     async function _loadIfc() {
-      const file = await fetch(
-         "https://thatopen.github.io/engine_components/resources/small.ifc",
-      );
+      const file = await fetch( 
+        "https://thatopen.github.io/engine_components/resources/small.ifc"
+        
+       );
       const data = await file.arrayBuffer();
       const buffer = new Uint8Array(data);
       const model = await fragmentIfcLoader.load(buffer);
