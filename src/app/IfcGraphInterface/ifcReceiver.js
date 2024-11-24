@@ -1,11 +1,11 @@
 export default async function sendIFC(ifcImport) {
-    console.log("ifcImport in sendIFC: ", ifcImport);
+    console.log("ifcImport in sendIFC: ");
     
     try {
       const formData = new FormData();
       formData.append('file', new Blob([ifcImport], { type: 'application/octet-stream' }));
       //formData.append('file', ifcImport);
-      console.log("IFC path string in sendIFC: ", ifcImport);
+      console.log("IFC path string in sendIFC: ");
   
       const response = await fetch('/api/runIfc2Neo', {
         method: 'POST',

@@ -102,7 +102,7 @@ export default function Home() {
     const viz = new NeoVis(config);
 
     // Render the graph
-    viz.render();
+    //viz.render();
 
     // Optional: Add event listeners
     viz.registerOnEvent("completed" as any, () => {

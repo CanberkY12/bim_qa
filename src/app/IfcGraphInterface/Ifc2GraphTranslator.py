@@ -44,6 +44,7 @@ class IFCGraphGenerator:
             raise Exception('Unable to open IFC model on given file path')
 
         # define the label (i.e., the model timestamp)
+        print("Defining the label for the model...")
         my_label = 'ts' + self.model.wrapped_data.header.file_name.time_stamp
         my_label = my_label.replace('-', '')
         my_label = my_label.replace(':', '')
@@ -62,7 +63,7 @@ class IFCGraphGenerator:
         parses the IFC model into the graph database
         @return: the label, by which you can identify the model in the database
         """
-
+        print('Generating graph for model in generated graph method...')
         if not self.write_to_file:
             # check if model has been already processed
             n = self.connector.run_cypher_statement('MATCH(n:{}) RETURN COUNT(n)'.format(self.timestamp))[0][0]
@@ -92,9 +93,9 @@ class IFCGraphGenerator:
             
 
             # check if the primary_node_type is either an ObjectDef or Relationship or neither
-            if entity.is_a('IfcObjectDefinition'):
+            if entity.__class__.__name__ == 'IfcObjectDefinition':
                 self.__map_entity(entity, "PrimaryNode")
-            elif entity.is_a('IfcRelationship'):
+            elif entity.__class__.__name__ == 'IfcRelationship':
                 self.__map_entity(entity, "ConnectionNode")
             else:
                 self.__map_entity(entity, "SecondaryNode")
@@ -174,7 +175,7 @@ class IFCGraphGenerator:
                 "properties": attr_dict,
 
             }
-            arrows["nodes"].append(arrows_node)
+            arrows["nodes"].append([arrows_node])
 
             x_pos += 100
 
@@ -194,7 +195,7 @@ class IFCGraphGenerator:
                     "style": {},
                     "type": assoc,
                     "fromId": "n" + str(node_identifier),
-                    "toId": "n" + str(target.get_info()["id"])
+                    "toId": "n" + str(target["id"])
                 }
 
                 arrows["relationships"].append(rel)
@@ -585,9 +586,10 @@ class IFCGraphGenerator:
             p_val = info[p_name]
 
             if p_name == 'NominalValue':
-                wrapped_val = p_val.wrappedValue
-                p_val = 'IfcLabel({})'.format(str(wrapped_val).replace("'", ""))
-                p_val = str(p_val)
+                if p_val is not None:
+                    wrapped_val = p_val.wrappedValue
+                    p_val = 'IfcLabel({})'.format(str(wrapped_val).replace("'", ""))
+                    p_val = str(p_val)
                 # ToDo: consider this workaround when translating a graph back in its SPF representation
 
             node_properties_dict[p_name] = p_val

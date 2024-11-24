@@ -43,7 +43,7 @@ def main():
     # print(paths)
 
     paths = [
-        "C:/Users/berky/Downloads/small.ifc"
+        "C:/Users/berky/Downloads/Building-Architecture.ifc"
     ]
     
 

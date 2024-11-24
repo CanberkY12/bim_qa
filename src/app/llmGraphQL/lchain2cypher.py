@@ -55,15 +55,15 @@ url=os.getenv("url")
 
 graph = Neo4jGraph(url=url,username=username,password=password,sanitize=True)
 driver = GraphDatabase.driver(url, auth=(username, password))
-print(graph.schema)
+#print(graph.schema)
 
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 print("API key received")
 
 llm = ChatGroq(
-    model="llama-3.2-3b-preview",
-    temperature=0.3,
-    max_tokens=None,
+    model="llama3-8b-8192",
+    temperature=0.0,
+    max_tokens=100,
     timeout=None,
     max_retries=3,
     # other params...
@@ -87,7 +87,7 @@ prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "Given an input question, convert it to a Cypher query. No pre-amble.",
+            "Given an input question, convert it to a Cypher query. No pre-amble and only return the cypher query.",
         ),
         ("human", cypher_template),
     ]
@@ -106,12 +106,15 @@ cypher_chain = (
 response = cypher_chain.invoke(
     {
         "question": user_input
+        #"What are the names of all the walls in the model?",
+        
     }
 )
 print(response)
 
-# Example Cypher query to send to Neo4j
+# Cypher query to send to Neo4j
 cypher_query = response
+#hybrid_result = RunHybridRAG(generated_cypher=cypher_query)
 
 # Function to run a Cypher query on Neo4j and return results
 try:
@@ -119,6 +122,13 @@ try:
     driver.get_server_info()
     neo4j_connection = driver
     session = driver.session()
+    rag = RunHybridRAG()
+    rag.create_vector_index()
+    rag.create_fulltext_index()
+    rag.user_input = cypher_query
+    resultRag = rag.main()
+    print("RAG result", resultRag)
+    rag.close()
     session.run(cypher_query)
     result = session.run(cypher_query)
     print("db query result: ", result.data())
