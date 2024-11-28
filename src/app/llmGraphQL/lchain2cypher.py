@@ -20,13 +20,6 @@ import seaborn as sns
 from langchain_groq import ChatGroq
 from langchain_core.prompts import ChatPromptTemplate
 
-import torch
-
-
-#print(transformers.__version__)
-
-#import numpy as np
-#from flask import Flask, request
 
 #Reciveing user input from the web page and returning a response ( page.tsx -> promptreceiver.js -> runPython.js -> lchain2cypher.py )
 user_input = sys.argv[1]  # Read the argument passed by the Node.js script
@@ -40,10 +33,6 @@ except Exception as e:
     print("No data received")
 
 
-# Initialize language model (e.g., LLaMA 3.2) for text generation and embeddings
-# llm_pipeline = pipeline("text-generation", model="LLaMA-3.2")  # Specify correct model here
-# llm = HuggingFacePipeline(pipeline=llm_pipeline)
-
 # Connect to the neo4j graph
 
 username=os.getenv("username")
@@ -56,7 +45,7 @@ url=os.getenv("url")
 graph = Neo4jGraph(url=url,username=username,password=password,sanitize=True)
 driver = GraphDatabase.driver(url, auth=(username, password))
 #print(graph.schema)
-
+schema = graph.get_schema()
 os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 print("API key received")
 
@@ -87,7 +76,7 @@ prompt = ChatPromptTemplate.from_messages(
     [
         (
             "system",
-            "Given an input question, convert it to a Cypher query. No pre-amble and only return the cypher query.",
+            "Given an input question, convert it to a Cypher query. No pre-amble.",
         ),
         ("human", cypher_template),
     ]
@@ -110,10 +99,10 @@ response = cypher_chain.invoke(
         
     }
 )
+if "`" in response:
+    response = response.replace("`", "")
 print(response)
 
-# Cypher query to send to Neo4j
-cypher_query = response
 #hybrid_result = RunHybridRAG(generated_cypher=cypher_query)
 
 # Function to run a Cypher query on Neo4j and return results
@@ -125,12 +114,11 @@ try:
     rag = RunHybridRAG()
     rag.create_vector_index()
     rag.create_fulltext_index()
-    rag.user_input = cypher_query
+    rag.cypher_query = response
     resultRag = rag.main()
     print("RAG result", resultRag)
     rag.close()
-    session.run(cypher_query)
-    result = session.run(cypher_query)
+    result = session.run(response)
     print("db query result: ", result.data())
 
     #session.run("MATCH (p:Person {name: 'Alice'}) WITH p LIMIT 5 DELETE p")

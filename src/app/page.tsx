@@ -180,7 +180,11 @@ export default function Home() {
     //world.scene.three.background = 'hsl(0, 100%, 50%)';
 
     // C++ lib WASM fastens the computation
-    fragmentIfcLoader.setup();
+    fragmentIfcLoader.settings.wasm = {
+         path: "https://unpkg.com/web-ifc@0.0.57/",
+         absolute: true,
+       };
+    fragmentIfcLoader.settings.webIfc.MEMORY_LIMIT = 2 * 1024 * 1024 * 1024; // ~2GB
 
     // exclude categories that we don't want to convert to fragments
     const excludedCats = [
@@ -202,13 +206,15 @@ export default function Home() {
     const webIfc = new WEBIFC.IfcAPI();
     webIfc.SetWasmPath("https://unpkg.com/web-ifc@0.0.57/", true);
     webIfc.Init();
-
-// "https://drive.google.com/file/d/16dbPVxQLbBlOygnD0jysEbqL5betT8a5/view?usp=sharing" "https://drive.google.com/file/d/1kmELgMgmpr3IR9pEwTm8_xPIuKcOUC9v/view?usp=sharing"
+// "https://thatopen.github.io/engine_components/resources/small.ifc"
+// https://drive.google.com/file/d/1kmELgMgmpr3IR9pEwTm8_xPIuKcOUC9v/view?usp=sharing "https://drive.google.com/file/d/1kmELgMgmpr3IR9pEwTm8_xPIuKcOUC9v/view?usp=sharing"
+ //"https://drive.google.com/uc?export=download&id=1kmELgMgmpr3IR9pEwTm8_xPIuKcOUC9v"
     async function _loadIfc() {
-      const file = await fetch( 
-        "https://thatopen.github.io/engine_components/resources/small.ifc"
+      const file = await fetch(
+        "https://thatopen.github.io/engine_components/resources/small.ifc",
         
-       );
+      );
+      console.log(file);
       const data = await file.arrayBuffer();
       const buffer = new Uint8Array(data);
       const model = await fragmentIfcLoader.load(buffer);

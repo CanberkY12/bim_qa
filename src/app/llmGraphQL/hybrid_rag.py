@@ -5,18 +5,11 @@ from neo4j import GraphDatabase
 import subprocess
 from neo4j_graphrag.retrievers import HybridRetriever, HybridCypherRetriever
 from langchain_ollama import OllamaEmbeddings
-from neo4j_graphrag.types import (
-    EmbedderModel,
-    HybridCypherRetrieverModel,
-    HybridCypherSearchModel,
-    HybridRetrieverModel,
-    HybridSearchModel,
-    Neo4jDriverModel,
-    RawSearchResult,
-    RetrieverResultItem,
-    SearchType,
-)
+import ollama
+from langchain_community.vectorstores import Chroma
+import ifcopenshell
 
+import ifcChunker
 # Import the client
 
 os.environ["GROQ_API_KEY"] = dotenv.get_key(".env" ,"GROQ_API_KEY")
@@ -27,6 +20,7 @@ class RunHybridRAG:
         self.username=dotenv.get_key(".env" ,"username")
         self.password=dotenv.get_key(".env" ,"password")
         self.user_input = None
+        self.cypher_query = None
         self.driver = self.connect()
 
     def connect(self):
@@ -37,14 +31,32 @@ class RunHybridRAG:
     
     # Create a vector index
     def create_vector_index(self):
-        drop_index_query = """ DROP INDEX ifcModelEmbeddings IF EXISTS; """
-        with self.driver.session() as session:
-            try:
-                session.run(drop_index_query)
-                print("Vector index 'ifcModelEmbeddings' deleted successfully.")
-            except Exception as e:
-                print("Vector index 'ifcModelEmbeddings' could not be deleted.", e)
+        # This file is going to be received from the frontend as a file upload. For now, it is hardcoded.
+        # However, the ifcChunker also needs to receive nodes from kg of neo4j and iterate over them to create the chunks.
+        ifc_file = ifcopenshell.open("C:/Users/berky/Downloads/small (1).ifc")
+        ifc_element = ifcChunker.IfcElement(ifc_file)
+        #with self.driver.session() as session:
+        #    try:
+        #        nodes = session.run("MATCH (n) RETURN DISTINCT labels(n) AS node")
+        #        print("Nodes received from kg for chunking...")
+        #        relationships = session.run("MATCH ()-[r]->() RETURN DISTINCT type(r) AS relationship")
+        #        print("Relationships received from kg for chunking...")
+        #    except Exception as e:
+        #        print("Error while querying the nodes and relationships from db: ", e)
+            
+        chunks = ifc_element.splitter()
+        ollama.pull("nomi-embed-text")
+        vectorstore = Chroma.from_documents(
+            documents= chunks,
+            embedding = OllamaEmbeddings(model="nomi-embed-text"),
+            model="nomi-embed-text",
+            collection_name= "ifcModelEmbeddings",
+        )
 
+        # Part below was meant to be used for creating the vector index in the Neo4j database but not going to be used.
+        drop_index_query = """ DROP INDEX ifcModelEmbeddings IF EXISTS; """
+
+            
         query = """
         CREATE VECTOR INDEX ifcModelEmbeddings IF NOT EXISTS
             FOR (m:Entity)
@@ -56,19 +68,19 @@ class RunHybridRAG:
             }
         }
         """
-        with self.driver.session() as session:
-            try:
-                session.run(drop_index_query)
-                print("Vector index 'ifcModelEmbeddings' deleted successfully.")
-            except Exception as e:
-                print("Error deleting vector index:", e)
+        #with self.driver.session() as session:
+        #    try:
+        #        session.run(drop_index_query)
+        #        print("Vector index 'ifcModelEmbeddings' deleted successfully.")
+        #    except Exception as e:
+        #        print("Error deleting vector index:", e)
 
-            try:
-                session.run(query)
-                print("Vector index 'ifcModelEmbeddings' created successfully.")
-            except Exception as e:
-                print("Error creating vector index:", e)
-  
+        #    try:
+        #        session.run(query)
+        #        print("Vector index 'ifcModelEmbeddings' created successfully.")
+        #    except Exception as e:
+        #        print("Error creating vector index:", e)
+
 
     # Create a full-text index
     def create_fulltext_index(self):
@@ -83,7 +95,7 @@ class RunHybridRAG:
                 print("Full-text index 'ifcFulltext' already exists.")
 
     def main(self):
-        import ollama
+        
         #model_name = "mxbai-embed-large"
         model_name = "llama3.2"
 
@@ -104,10 +116,11 @@ class RunHybridRAG:
             print("Ollama CLI not found. Ensure it is installed and in your PATH.")
             
        
-        #with self.driver.session() as session:
-        #ollama.pull(model_name)
         embedder = OllamaEmbeddings(model=model_name)
         print("Embedder created successfully.", embedder)
+
+        #This retriever is not receivng and cypher prompts. It is only receiving the user input.
+        """
         retriever = HybridRetriever(
             self.driver,
             vector_index_name="ifcModelEmbeddings",
@@ -115,21 +128,29 @@ class RunHybridRAG:
             embedder=embedder,
             return_properties=["name", "type", "properties", "globalid"],
         )
+        """
+        #query_text = Is the User's natural language prompt that is used for invoking.
         query_text = self.user_input
         if not self.user_input:
             raise ValueError("User input cannot be empty. Provide a query.")
-        retriever_result = retriever.search(query_text=query_text, top_k=3)
+        #retriever_result = retriever.search(query_text=query_text, top_k=3)
         #print(retriever_result.stdout.decode('utf-8', errors='replace'))  # Decode manually with error handling
-        print("normal retriever: ",retriever_result)
+        #print("normal retriever: ",retriever_result)
 
-        retrieval_query = self.user_input
+
+        #Retrieval Query = Is the cypher query genereted from lchain2cypher text and send to  cypher hybrid retriever.
+        retrieval_query = self.cypher_query
         #"""
         #                MATCH (n:Entity)
         #                WHERE n.type = $slab
         #                RETURN n.name, n.type, n.properties, n.GlobalId
         #                """
         hyCy_retriever = HybridCypherRetriever(
-            self.driver, "ifcModelEmbeddings", "ifcFulltext",retrieval_query, embedder
+            self.driver, 
+            "ifcModelEmbeddings", 
+            "ifcFulltext",
+            retrieval_query, 
+            embedder
         )
         hyCy_retrieverresult = hyCy_retriever.search(query_text=query_text, top_k=5)
         print("Cypher retriever: ",hyCy_retrieverresult)

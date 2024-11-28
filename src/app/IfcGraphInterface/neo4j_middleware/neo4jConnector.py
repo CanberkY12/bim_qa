@@ -1,6 +1,7 @@
 import logging
 import re
 import os
+import dotenv
 
 from neo4j import GraphDatabase
 from neo4jGraphDiff.Config.Configuration import Configuration
@@ -29,9 +30,12 @@ class Neo4jConnector:
         creates a new connection to the database
         @return:
         """
-        username=os.getenv("username")
-        password=os.getenv("password")
-        url=os.getenv("url")
+        url=dotenv.get_key(".env" ,"url")
+        username=dotenv.get_key(".env" ,"username")
+        password=dotenv.get_key(".env" ,"password")
+        #username=os.getenv("username")
+        #password=os.getenv("password")
+        #url=os.getenv("url")
         try:
             self.my_driver = GraphDatabase.driver(url, auth=(username, password))
         except self.my_driver:
