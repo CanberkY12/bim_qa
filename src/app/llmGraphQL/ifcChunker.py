@@ -174,7 +174,7 @@ class IfcElement:
                 "relationships": relationships
             }
         )
-        print("llm based chunks: ",response)
+        #print("llm based chunks: ",response)
         return response
     
     def create_chunks(self):
@@ -237,7 +237,7 @@ class IfcElement:
                                     #"Representation": representation,
                                     #"AdditionalAttributes": additional_attributes  # Include additional attributes
                                 }
-                                print("chunk: ",chunk)
+                                #print("chunk: ",chunk)
                                 chunks.append(chunk)
 
 
@@ -261,10 +261,10 @@ class IfcElement:
                 for record in nodes:
                     if any("IfcRel" in label for label in record["node"]):
                         RelNodes.append(record["node"])
-                        print(record["node"])
+                        #print(record["node"])
                 
-                for record in relationships:
-                    print(record["relationship"])
+                #for record in relationships:
+                #    print(record["relationship"])
             except Exception as e:
                 print("Error while querying the nodes and relationships from db: ", e)
         

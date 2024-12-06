@@ -1,14 +1,17 @@
 import os
 import dotenv
 
-from neo4j import GraphDatabase
-import subprocess
-from neo4j_graphrag.retrievers import HybridRetriever, HybridCypherRetriever
-from langchain_ollama import OllamaEmbeddings
+# Package imports
 import ollama
-from langchain_community.vectorstores import Chroma
+import subprocess
 import ifcopenshell
+from neo4j import GraphDatabase
+#from langchain_chroma import Chroma
+from langchain_ollama import OllamaEmbeddings
+from langchain_community.vectorstores import SKLearnVectorStore
+from neo4j_graphrag.retrievers import HybridCypherRetriever
 
+# Local imports
 import ifcChunker
 # Import the client
 
@@ -28,7 +31,7 @@ class RunHybridRAG:
         driver = GraphDatabase.driver(self.url, auth=(self.username, self.password))
         print("Connected to the Neo4j graph.")
         return driver
-    
+
     # Create a vector index
     def create_vector_index(self):
         # This file is going to be received from the frontend as a file upload. For now, it is hardcoded.
@@ -43,20 +46,32 @@ class RunHybridRAG:
         #        print("Relationships received from kg for chunking...")
         #    except Exception as e:
         #        print("Error while querying the nodes and relationships from db: ", e)
-            
+
         chunks = ifc_element.splitter()
-        ollama.pull("nomi-embed-text")
-        vectorstore = Chroma.from_documents(
-            documents= chunks,
-            embedding = OllamaEmbeddings(model="nomi-embed-text"),
-            model="nomi-embed-text",
-            collection_name= "ifcModelEmbeddings",
+
+        #persist_directory = "C:/Users/berky/oxide/src/app/llmGraphQL/vector_store"  # Directory to save the vector store
+
+        ollama.pull("nomic-embed-text")
+
+        vectorstore = SKLearnVectorStore.from_documents(
+            documents=chunks,
+            embedding=OllamaEmbeddings(model="nomic-embed-text"),
         )
 
+        #vectorstore = Chroma.from_documents(
+        #    documents= chunks,
+        #    embedding = OllamaEmbeddings(model="nomic-embed-text"),
+        #    collection_name= "ifcModelEmbeddings",
+        #    persist_directory=persist_directory,
+        #)
+
+        #vectorstore.persist()  # Save the vector store to disk
+        print(vectorstore)
+        return vectorstore
         # Part below was meant to be used for creating the vector index in the Neo4j database but not going to be used.
         drop_index_query = """ DROP INDEX ifcModelEmbeddings IF EXISTS; """
 
-            
+
         query = """
         CREATE VECTOR INDEX ifcModelEmbeddings IF NOT EXISTS
             FOR (m:Entity)
@@ -80,8 +95,7 @@ class RunHybridRAG:
         #        print("Vector index 'ifcModelEmbeddings' created successfully.")
         #    except Exception as e:
         #        print("Error creating vector index:", e)
-
-
+    
     # Create a full-text index
     def create_fulltext_index(self):
         query = """
@@ -95,7 +109,7 @@ class RunHybridRAG:
                 print("Full-text index 'ifcFulltext' already exists.")
 
     def main(self):
-        
+
         #model_name = "mxbai-embed-large"
         model_name = "llama3.2"
 
@@ -114,10 +128,11 @@ class RunHybridRAG:
             print(f"Failed to pull model {model_name}. Error:\n{e.stderr}")
         except FileNotFoundError:
             print("Ollama CLI not found. Ensure it is installed and in your PATH.")
-            
-       
+
+
         embedder = OllamaEmbeddings(model=model_name)
         print("Embedder created successfully.", embedder)
+
 
         #This retriever is not receivng and cypher prompts. It is only receiving the user input.
         """
@@ -145,25 +160,56 @@ class RunHybridRAG:
         #                WHERE n.type = $slab
         #                RETURN n.name, n.type, n.properties, n.GlobalId
         #                """
+
+        #similar_docs = self.create_vector_index().similarity_search(query_text, k=5)
+        #doc_ids = [doc.metadata["id"] for doc in similar_docs]
+        # Directory where the vector store was saved
+        persist_directory = "C:/Users/berky/oxide/src/app/llmGraphQL/vector_store"
+
+        # Reload the vector store
+        #try:
+        #    vectorstore = self.create_vector_index()
+        #except FileNotFoundError:
+        #    print("Vector store not found...")
+            
+        
+
+
         hyCy_retriever = HybridCypherRetriever(
-            self.driver, 
-            "ifcModelEmbeddings", 
-            "ifcFulltext",
-            retrieval_query, 
-            embedder
+            driver = self.driver, 
+            vector_index_name  = "ifcModelEmbeddings",
+            fulltext_index_name = "ifcFulltext",
+            retrieval_query = retrieval_query, 
+            embedder = embedder,
         )
+
         hyCy_retrieverresult = hyCy_retriever.search(query_text=query_text, top_k=5)
-        print("Cypher retriever: ",hyCy_retrieverresult)
+        print("Cypher retriever: ", hyCy_retrieverresult)
         return hyCy_retrieverresult
 
     def close(self):
         self.driver.close()
 
 #if __name__ == "__main__":
-#    rag = RunHybridRAG()
-#    rag.create_vector_index()
+#rag = RunHybridRAG()
+#persist_directory = "C:/Users/berky/oxide/src/app/llmGraphQL/vector_store"
+
+
+#vectorstore = rag.create_vector_index()
+#retriever =  vectorstore.as_retriever(k = 3)
+#result = retriever.invoke("What are the names of all the walls in the model?")
+#print(result)
+
 #    rag.create_fulltext_index()
 #    rag.user_input = generated_cypher
 #    result = rag.main()
 #    print(result)
 #    rag.close()
+#try:
+#    vectorstore = Chroma(
+#        embedding_function=OllamaEmbeddings(model="nomic-embed-text"),
+#        collection_name="ifcModelEmbeddings",
+#        persist_directory=persist_directory
+#    )
+#except FileNotFoundError:
+#    print("Vector store not found. Generating a new vector index for hybrid RAG retrieval...")
