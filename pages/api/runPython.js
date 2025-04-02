@@ -5,6 +5,7 @@ import { spawn } from 'child_process';
 export default function handler(req, res) {
     if (req.method === 'POST') {
         const userInput = req.body.userInput;
+        const inputTest = "How many windows are there in the building?";
         console.log("User input is in runPython: ", typeof userInput);
         // Spawn a Python process
         const pythonProcess = spawn('python', ['src/app/llmGraphQL/lchain2cypher.py', userInput]);
@@ -21,7 +22,12 @@ export default function handler(req, res) {
 
         pythonProcess.on('close', (code) => {
             console.log(`Python process exited with code ${code}`);
-            res.status(200).json({ result });
+            if (code === 0) {
+                console.log("Final result in runPython: ", result);
+                res.status(200).json({ result });
+            } else {
+                res.status(500).json({ error: 'Python script failed' });
+            }
         });
     } else {
         res.status(405).send('Method Not Allowed');
