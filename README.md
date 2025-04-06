@@ -11,7 +11,9 @@ In this project, a case study of improving a small and local Large Language Mode
 # Contents
 
 data/: Contains the ifcnarrative text files and the vector store that is contained in Chroma db.
+
 pages\api/: Created for a JavaScript based GET/POST logic implemented several files that simply send the Ifc file and the user input to the backend and to the databases.
+
 src/app/: The implementation is located here. Refer to the User Interface (UI) side of the application which contains the React based web page dev (page.tsx) and the backend part which is written with Python. The backend parts can be specifically found under ifcRagApp and llmGraphQL folders.
 
 # Installation and Setup
