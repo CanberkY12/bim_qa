@@ -1,3 +1,11 @@
+#
+#           This file is not part of the workflow.
+#           It is completely different implementation that is meant for learning the logic of hybrid RAG.
+#           So, this is not runnin gin the app.
+#
+
+
+
 import os
 import dotenv
 

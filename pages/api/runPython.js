@@ -1,14 +1,13 @@
 // File: pages/api/runPython.js
 import { spawn } from 'child_process';
 
-
+//This js is only containing a post method as the endpoint is only intended to process/pass data sent in the request body
 export default function handler(req, res) {
     if (req.method === 'POST') {
         const userInput = req.body.userInput;
-        const inputTest = "How many windows are there in the building?";
         console.log("User input is in runPython: ", typeof userInput);
         // Spawn a Python process
-        const pythonProcess = spawn('python', ['src/app/llmGraphQL/lchain2cypher.py', userInput]);
+        const pythonProcess = spawn('python', ['src/app/llm4Cypher/lchain2cypher.py', userInput]);
 
         let result = '';
         pythonProcess.stdout.on('data', (data) => {

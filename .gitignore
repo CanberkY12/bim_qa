@@ -10066,3 +10066,14 @@ data/narrativesFirst.txt
 data/kgPathsFirst.txt
 data/chunks__.txt
 data/chunks.txt
+src/app/llm4Cypher/__pycache__/few_shot_examples.cpython-39.pyc
+src/app/llm4Cypher/__pycache__/few_shot_examples.cpython-312.pyc
+src/app/llm4Cypher/__pycache__/gql_cy_prompter.cpython-39.pyc
+src/app/llm4Cypher/__pycache__/graphql.cpython-39.pyc
+src/app/llm4Cypher/__pycache__/hybrid_rag.cpython-39.pyc
+src/app/llm4Cypher/__pycache__/hybrid_rag.cpython-312.pyc
+src/app/llm4Cypher/__pycache__/ifcChunker.cpython-39.pyc
+src/app/llm4Cypher/__pycache__/ifcChunker.cpython-312.pyc
+src/app/llm4Cypher/__pycache__/llama_3_cypher.cpython-39.pyc
+src/app/llm4Cypher/__pycache__/llama_3_cypher.cpython-312.pyc
+src/app/ifcRagApp/__pycache__/rag4llm.cpython-312.pyc

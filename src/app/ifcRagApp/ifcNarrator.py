@@ -3,9 +3,9 @@
 # 
 #       This file uses saved kgPath.txt file to narrate a knowledge graph paths story 
 # 
-#       that is going to be used as semantically rich and highly relevant vector store data.
+#       that is going to be used as semantically rich and highly knowledge graph state relevant vector store data.
 # 
-#       The secand class in the file named 'n2Vec is going to create and store the embeddings in chroma db.
+#       The second class in the file named 'ifcNarrator' is going to create and store the embeddings in chroma db.
 # #
 
 import os
@@ -16,7 +16,9 @@ from chromadb.utils import embedding_functions
 from chromadb.utils.embedding_functions import OllamaEmbeddingFunction
 
 class CustomOllamaEmbeddingFunction:
-    """A custom embedding function that safely calls the Ollama API"""
+    """
+    Here just calling the Ollama API for crteating embeddings model.
+    """
     def __init__(self, url="http://localhost:11434", model_name="nomic-embed-text:latest"):
         self.url = url
         self.model_name = model_name
@@ -27,7 +29,6 @@ class CustomOllamaEmbeddingFunction:
         Args:
             input: A string or list of strings to generate embeddings for
         """
-        # Handle both single string and list inputs
         if isinstance(input, str):
             input = [input]
             
@@ -35,17 +36,15 @@ class CustomOllamaEmbeddingFunction:
 
     def safe_embed(self, doc):
         """
-        Safely call the Ollama API for embeddings.
-        Handles JSON decode errors and empty documents.
+        Call the Ollama API for embeddings, also
+        address JSON decode errors and empty documents.
         """
         if not doc or not doc.strip() or doc.strip() == "Empty record.":
-            print("Skipping embedding for empty record or document.")
-            return [0.0] * 768  # Return zero vector with standard embedding size
+            return [0.0] * 768 
         
         import httpx
         
         try:
-            # Direct API call to Ollama with error handling
             response = httpx.post(
                 f"{self.url}/api/embeddings",
                 json={"model": self.model_name, "prompt": doc},
@@ -53,18 +52,21 @@ class CustomOllamaEmbeddingFunction:
             )
             response.raise_for_status()
             data = response.json()
-            # Extract the embedding from the response
             return data.get("embedding", [0.0] * 768)
             
         except Exception as e:
             print(f"Error generating embedding: {e}")
-            # Return a zero vector as fallback
             return [0.0] * 768
 
 
 
 
 class ifcNarrator:
+    """
+    The main class for narrating the knowledge graph paths.
+    In a simple explanation: Takes already stored chunks text file -> narratess the paths -> stores the embeddings in chroma db.
+
+    """
     def __init__(self):
         self.kgPath = "C:/Users/berky/oxide/data/chunks.txt"
         self.kgPathList = []
@@ -77,13 +79,13 @@ class ifcNarrator:
         )
 
         self.ollama_url = "http://localhost:11434"
-        # Create a custom embedding function that implements the protocol
+        
         self.embedding_function = CustomOllamaEmbeddingFunction(
             url=self.ollama_url,
             model_name="nomic-embed-text:latest"
         )
     
-        # Use our custom embedding function for the collection
+      
         self.collection = self.client.get_or_create_collection(
             "ifc_narratives", 
             embedding_function=self.embedding_function
@@ -126,20 +128,22 @@ class ifcNarrator:
         
         try:
             import json
-            # Remove potential whitespace/newlines and safely convert the string to a Python object
+            
             parsed_record = ast.literal_eval(record.strip())
             print("parsed_record: ", parsed_record)
         except Exception as e:
             return f"Error parsing record: {e}"
 
         narrative_parts = []
-        # Expecting parsed_record to be a list of items (each likely a dict containing key 'p')
+       # there are many print statements in the code, which are used for debugging and tracking the process.
         for element in parsed_record:
             if isinstance(element, dict) and 'p' in element:
-                print("Element: ",element)
+                #print("Element: ",element)
                 parts = element['p']
-                print("parts: ", parts)
+                #print("parts: ", parts)
                 i = 0
+                # The part here is süper crucial as it directly tailors the narrations language.
+                # It always up to improvement and in fact should be improved.
                 while i < len(parts):
                     item = parts[i]
                     if isinstance(item, dict):
@@ -150,14 +154,14 @@ class ifcNarrator:
                         i += 1
                     elif isinstance(item, str):
                         relationship = item
-                        # Check if the next item is a dictionary containing node info
+                        
                         if i + 1 < len(parts) and isinstance(parts[i + 1], dict):
                             next_node = parts[i + 1]
                             attr_str = ", ".join(f"{k}: '{v}'" for k, v in next_node.items() if k != '__instance_of')
                             narrative_parts.append(
                                 f"It is connected via the relationship '{relationship}' to {next_node.get('__instance_of', 'Unknown')}, which has attributes ({attr_str})."
                             )
-                            i += 2  # Skip the current relationship string and its following node
+                            i += 2 
                         else:
                             narrative_parts.append(
                                 f"It is connected via the relationship '{relationship}', but no node info is provided."
@@ -190,7 +194,7 @@ class ifcNarrator:
                     self.narratedChunks.append(narrative)
                 
         print(f"Narratives generated", self.narratedChunks)
-        # Print the narratives, one per record
+        # Print the narratives, in a one per record way
         """for idx, narrative in enumerate(self.narratedChunks, start=1):
             print(f"Record {idx}: {narrative}")"""
 
@@ -217,7 +221,6 @@ class ifcNarrator:
             
             print(f"Loading text from {file_path}...")
             
-            # Read the entire file content
             with open(file_path, "r", encoding="utf-8") as f:
                 text = f.read()
                 
@@ -225,7 +228,8 @@ class ifcNarrator:
                 print(f"No content found in {file_path}.")
                 return
                 
-            # Use RecursiveCharacterTextSplitter which handles long texts better
+            # RecursiveCharacterTextSplitter which handles long texts better
+            # Overlap size and so on are all debatable and wouldn't defend this configuration at all.
             text_splitter = RecursiveCharacterTextSplitter(
                 chunk_size=1500,
                 chunk_overlap=200,
@@ -233,11 +237,10 @@ class ifcNarrator:
                 separators=["\n\n", "\n", " ", ""]
             )
             
-            # Split the text into chunks
+            # Whole text split into chunks here.
             chunks = text_splitter.split_text(text)
             print(f"Split text into {len(chunks)} chunks.")
             
-
             print("Recreating collection...")
             try:
                 self.client.delete_collection("ifc_narratives")
@@ -250,7 +253,7 @@ class ifcNarrator:
                 "ifc_narratives", 
                 embedding_function=self.embedding_function
             )
-            # Process in smaller batches
+            # Processing in smaller batches better for computing
             #total_chunks = len(chunks)
             total_chunks = 100
             for i in range(0, total_chunks, batch_size):
@@ -271,7 +274,7 @@ class ifcNarrator:
                 )
                 
                 
-            # Verify the collection was created
+            # A small verification test
             collections = self.client.list_collections()
             collection_names = [col.name for col in collections]
             print(f"Available collections: {collection_names}")
@@ -295,9 +298,10 @@ class ifcNarrator:
                 print(f"Successfully stored {total_chunks} text chunks to Chroma DB at '{self.persist_directory}'.")
                 
         except ImportError:
+            # I had package management issues for some reason. So implemented this try except block to call the package
+            # Sometimes it doesn't import :S.
             print("LangChain not installed. Please install with: pip install langchain")
-        except Exception as e:
-            print(f"Error storing chunked narratives to Chroma DB: {e}")
+        
 
 if __name__ == "__main__":
     narrator = ifcNarrator()

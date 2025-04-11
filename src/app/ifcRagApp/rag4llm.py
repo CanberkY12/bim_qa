@@ -8,15 +8,25 @@ else:
     print("Directory doesn't exist!")
 
 class RunLocalRAG:
+    """
+    Obviously, the final .py file in ifcRagApp.
+    Receives the user input -> generates the embedding for the query text
+    -> queries the ChromaDB collection -> retrieves the documents -> generates the response using LLM.
+
+    The final LLM response is making the result better, but takes longer time (around avg. 13 seconds).
+    It can be cancelled.
+    
+    """
 
     def runChromaRAG(self, query_text):
+        # This is the path to the ChromaDB directory where the database is stored.
+        # Obviously everything is local, hence the vector store.
         persist_directory = "C:/Users/berky/oxide/data/chroma"
         
-        # Initialize ChromaDB client directly
         print("Initializing ChromaDB client...")
         client = chromadb.PersistentClient(path=persist_directory)
         
-        # List all collections to see the available ones
+        # Check the available collection/s
         collections = client.list_collections()
         print(f"Available collections ({len(collections)}):")
         for coll in collections:
@@ -52,7 +62,7 @@ class RunLocalRAG:
                 print(f"Error generating query embedding: {e}")
                 return {"error": f"Failed to generate embedding: {str(e)}"}
             
-
+            # Adding the time counter in order to measeure the performance of the RAG ret.
             print("Querying collection...")
             query_start = time.time()
             results = collection.query(
@@ -98,7 +108,10 @@ class RunLocalRAG:
         
         Answer:"""
         
-
+        # This is the final LLM part.
+        # Receives the rag retrivals and summarizes them in a way that can be used for cypher query generation.
+        # As mentioned before, not necessary.
+        # An alternative is also using ollama.pull() method to call the model.
         try:
             llm_start = time.time()
             response = httpx.post(

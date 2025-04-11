@@ -5,13 +5,10 @@
 #       The workflor follows: Get Ifc BuiltElements in the Graph -> Get all the extra descriptions from bsdd and add to the attributes under name  "description"
 #       The following libraries are used: 
 #
-import os
+
 import bsdd
-import ifcopenshell
-import inspect
+
 import json
-import uuid  # Add this for GUID generation
-import random  # For randomly selecting properties
 from neo4j import GraphDatabase
 from langchain_community.graphs import Neo4jGraph
 
@@ -30,104 +27,95 @@ class ExternalLibUtils:
     
     
     def getListofBuiltElements(self):
+        """
+                   In this method, the IfcBuiltElement subclasses are gathered.
+                   For some reason, the iteration only goes untill the letter "R" and the rest 
+                   is written/added manually.
+        """
 
-        """
-        Get a list of all built elements from bSDD ifcOWL
-        """
+        client = bsdd.Client()
+        
+        offset = 0
         try:
-            # Create a bSDD client
-            client = bsdd.Client()
+            classes = client.get_classes(
+                dictionary_uri="https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3",
+                use_nested_classes=False,
+                offset=offset
+                
+            )
             
-            offset = 0
-            try:
-                classes = client.get_classes(
-                    dictionary_uri="https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3",
-                    use_nested_classes=False,
-                    offset=offset
-                    
-                )
-                
-                #print("Classes:", classes)
-                #for cl in classes["classes"]: 
-                #    print(cl)
-                #print(classes["classes"])
-                # Filter classes where parentClassCode is IfcBuiltElement
-                
-                ifcbe = client.get_class(class_uri = "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/IfcBuiltElement")
-                #print("ifcbe: ", ifcbe)
+            #print("Classes:", classes)
+            #for cl in classes["classes"]: 
+            #    print(cl)
+            #print(classes["classes"])
+            # Filter classes where parentClassCode is IfcBuiltElement
+            
+            ifcbe = client.get_class(class_uri = "https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/IfcBuiltElement")
+            #print("ifcbe: ", ifcbe)
 
-                built_element_classes = [
-                    cls for cls in classes["classes"]
-                    if isinstance(cls, dict) and cls.get('parentClassCode') == 'IfcBuiltElement'
-                ]
-                
-                
-                # Extract the names of the built element classes
-                built_element_names = [
-                    cls.get('code') for cls in built_element_classes
-                ]
+            built_element_classes = [
+                cls for cls in classes["classes"]
+                if isinstance(cls, dict) and cls.get('parentClassCode') == 'IfcBuiltElement'
+            ]
+            
+            
+            # "code" in the keys refers to the IfcType name.
+            built_element_names = [
+                cls.get('code') for cls in built_element_classes
+            ]
 
-                # Add common built elements that might not be returned directly as children
-                built_element_names.extend([
-                    "IfcSlab", 
-                    "IfcWall", 
-                    "IfcWindow", 
-                    "IfcStair"
-                ])
-                
-                print(f"Found {len(built_element_names)} built element classes from bSDD")
-                return sorted(list(set(built_element_names)))  # Remove duplicates
+            # Adding here the uniterated part of the subclasses
+            built_element_names.extend([
+                "IfcSlab", 
+                "IfcWall", 
+                "IfcWindow", 
+                "IfcStair"
+            ])
             
-            except Exception as e:
-                print(f"Error retrieving classes from bSDD: {e}")
-                return []
-            # Search for all classes that are children of IfcBuildingElement
-            
-            # Get all subclasses of IfcBuildingElement
-            
+            print(f"Found {len(built_element_names)} built element classes from bSDD")
+            return sorted(list(set(built_element_names)))  # Removing duplicates
         
         except Exception as e:
-            print(f"Error connecting to bSDD: {e}")
+            print(f"Error retrieving classes from bSDD: {e}")
             return []
+
         
     def getListofFurnishingElements(self):
         """
-        Get a list of all furnishing elements from bSDD ifcOWL
+        Same subclass listing method is applied for IfcFurnishingElement.
+        Furnishing elements added as extra because the users might want to query information about the 
+        many elements such as tables, chairs, etc. as well.
         """
+
+        client = bsdd.Client()
+        
+        offset = 0
         try:
-            # Create a bSDD client
-            client = bsdd.Client()
+            classes = client.get_classes(
+                dictionary_uri="https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3",
+                use_nested_classes=False,
+                offset=offset
+            )
             
-            offset = 0
-            try:
-                classes = client.get_classes(
-                    dictionary_uri="https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3",
-                    use_nested_classes=False,
-                    offset=offset
-                )
-                
-                # Filter classes where parentClassCode is IfcFurnishingElement
-                furnishing_element_classes = [
-                    cls for cls in classes["classes"]
-                    if isinstance(cls, dict) and cls.get('parentClassCode') == 'IfcFurniture'
-                ]
-                
-                # Extract the names of the furnishing element classes
-                furnishing_element_names = [
-                    cls.get('code') for cls in furnishing_element_classes
-                ]
-                furnishing_element_names.extend(["IfcFurnishingElement"])
-                
-                print(f"Found {len(furnishing_element_names)} furnishing element classes from bSDD")
-                return sorted(list(set(furnishing_element_names)))  # Remove duplicates
+            # Filter classes where parentClassCode is IfcFurnishingElement
+            furnishing_element_classes = [
+                cls for cls in classes["classes"]
+                if isinstance(cls, dict) and cls.get('parentClassCode') == 'IfcFurniture'
+            ]
             
-            except Exception as e:
-                print(f"Error retrieving classes from bSDD: {e}")
-                return []
+            # Extract the names here
+            furnishing_element_names = [
+                cls.get('code') for cls in furnishing_element_classes
+            ]
+            furnishing_element_names.extend(["IfcFurnishingElement"])
+            
+            print(f"Found {len(furnishing_element_names)} furnishing element classes from bSDD")
+            return sorted(list(set(furnishing_element_names)))  # Removing duplicates
         
         except Exception as e:
-            print(f"Error connecting to bSDD: {e}")
+            print(f"Error retrieving classes from bSDD: {e}")
             return []
+        
         
     def getAllElementDescription(self, element_name):
         """
@@ -140,11 +128,9 @@ class ExternalLibUtils:
 
         """
         try:
-            # Create a bSDD client
+        
             client = bsdd.Client()
-            
-            # Search for the element by name
-            
+    
             element = client.get_class(class_uri = f"https://identifier.buildingsmart.org/uri/buildingsmart/ifc/4.3/class/{element_name}")
             #print("Element: ", element)
             if element:
@@ -168,7 +154,6 @@ class ExternalLibUtils:
                 #print("parentClassReference: ",element.get('parentClassReference'))
                 #print("uid: ",element.get('uid'))
        
-                # Get properties if available
                 properties = []
                 if element.get('classProperties'):
                     for prop in element.get('classProperties'):
@@ -177,7 +162,7 @@ class ExternalLibUtils:
                             properties.append(prop.get('name'))
                 #print("properties: ",properties)
 
-                # Create a comprehensive description
+                # Definition part is highly important as it contains domain specific words and phrases taht would enhance RAG comprehension.
                 description = {
                     "code": element.get("code", ""),
                     "name": element.get("name", ""),
@@ -194,6 +179,8 @@ class ExternalLibUtils:
     def getGermanDescription(self, element_name):
         """
         Get the German description of an element from bSDD
+
+        Practically the same code , but this time focusing on the German description.
         """
         try:
             # Create a bSDD client
@@ -207,7 +194,6 @@ class ExternalLibUtils:
             if element:
 
 
-            # Create a comprehensive description
                 description = {
                     "code": element.get("code", ""),
                     "name": element.get("name", ""),
@@ -222,8 +208,10 @@ class ExternalLibUtils:
         
     def addCollectedDataToNodes(self, element_name, description):
         """
-        In this method the collected descriptions are going to be added to their correspoing nodes in the graph.
+        In this method the collected descriptions are going to be added to their correspoing nodes in the knowledge graph.
         """
+        # The cypher query for adding the description to the nodes.
+        #Simply iteratively receives the node names and their descriptions.
         nodeRecCypher = f"MATCH (n:{element_name}) SET n.description = '{description}'"
 
         try:
@@ -238,11 +226,12 @@ class ExternalLibUtils:
         print("Built elements:", built_elements)
         print("Furnishing elements:", furnishing_elements)
         for element in built_elements:
-            description = self.getAllElementDescription(element)
-            self.addCollectedDataToNodes(element, description)
-        for element in furnishing_elements:
-            description = self.getAllElementDescription(element)
-            self.addCollectedDataToNodes(element, description)
+            #description = self.getAllElementDescription(element)
+            german_description = self.getGermanDescription(element)
+            #self.addCollectedDataToNodes(element, description)
+        #for element in furnishing_elements:
+            #description = self.getAllElementDescription(element)
+            #self.addCollectedDataToNodes(element, description)
         print("Done")
         
 if __name__ == "__main__":

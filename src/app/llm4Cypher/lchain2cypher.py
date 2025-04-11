@@ -13,7 +13,7 @@ import ollama
 import ifcopenshell
 import sys
 
-import anthropic
+#import anthropic
 from openai import OpenAI # Import the OpenAI package
 from neo4j import GraphDatabase
 from langchain_openai import ChatOpenAI
@@ -33,9 +33,13 @@ os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 #print("OpenAI API key received...")
 
-#Reciveing user input from the web page and returning a response ( page.tsx -> promptreceiver.js -> runPython.js -> lchain2cypher.py )
-#user_input = sys.argv[1]  # Read the argument passed by the Node.js script
-user_input = "How many windows are there in the building?"
+"""
+ Reciveing user input from the web page and returning a response ( page.tsx -> promptreceiver.js -> runPython.js -> lchain2cypher.py )
+ the user_input = sys.argv[1] line is original web api connection. However for testing purposes, it can be hashed and question can be hardcoded.
+"""
+
+user_input = sys.argv[1]  # Read the argument passed by the Node.js script
+#user_input = "Any question here..."
 
 result = {"status": "success", "input_received": user_input}
 # Output result as JSON or Simply print the user input 
@@ -45,10 +49,18 @@ except Exception as e:
     print("No data received in cypher generator: ", e)
 
 class RunCypher:
+    """
+    lchain2cypher is the main class that is receiving the user input and generating the final cypher query.
+    The fine tuned model is called in local_llm method.
+    There are several methods that are calling other ai models such as OpenAI, Anthropic, Groq and Ollama.
+    The implementation is certainly not convenient. There should be a much better file/folder allocation and class structure.
+    However, the class and its methods are straitformward and self explanatory.
+    
+    """
     def __init__(self, user_input):
-        self.url="neo4j+s://be20d4fc.databases.neo4j.io"#os.getenv("url")
-        self.username="neo4j"#os.getenv("username")
-        self.password="sz7lL8-kJT9q5e7jN-j6VGoaEJ4XEXNRgHgJJugMp0U"#os.getenv("password")
+        self.url=os.getenv("url")
+        self.username=os.getenv("username")
+        self.password=os.getenv("password")
         self.driver = self.connect()
         self.graph = Neo4jGraph(url=self.url,username=self.username,password=self.password)
         self.user_input = user_input
@@ -61,7 +73,10 @@ class RunCypher:
 
 
     def few_shot_setter(self):
-
+        """
+        In case few shot examples wanted to be passed, this method can be tailored.
+        But currently unused.
+        """
         # Create a PromptTemplate for formatting the examples
         example_template = PromptTemplate(
             input_variables=["question", "schema"],  # Define the input variables for the template
@@ -85,7 +100,7 @@ class RunCypher:
         return model
     
     def unthropic_llm(self, user_input, task_description):
-
+        import anthropic
         claude_key = os.environ.get("anthropic_api_key")
         client = anthropic.Anthropic(
         api_key = claude_key,
@@ -104,8 +119,42 @@ class RunCypher:
         )
         result = message.content[0].text
         return result
+    
+    def groq_llm(self):
+        from groq import Groq
+
+        client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+        
+        # No need to pass schema and rag_result explicitly since they'll be passed 
+        # in the content through the RunnablePassthrough in cypherQuery method
+        def generate_query(prompt):
+            chat_completion = client.chat.completions.create(
+            messages=[
+                {
+                "role": "system",
+                "content": "You are an assistant specialized in generating Cypher queries for Neo4j based on IFC/BIM knowledge graphs. Only return the Cypher query without explanations."
+                },
+                {
+                "role": "user",
+                "content": prompt
+                }
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.1
+            )
+            return chat_completion.choices[0].message.content
+        
+        # Return the function that will be called by RunnablePassthrough
+        return generate_query
+
 
     def local_llm(self):
+        """
+        This generative model solely depends on the local hardware and it is crucial to make sure 
+        the hardware is up to it. 
+        model_kwargs better be understood and editted accordingly. 
+        In the current setting NVidia GTX 3050Ti 4Gb gpu is used with cuda support. 4gb is a bit low for this model (a bottleneck) but runs just fine?.
+        """
         ollama.pull("hf.co/berky12/Qwen2.5-Coder-7B-Instruct-ifc2cypher:latest")
         print("Ollama model created...")
         #ollama.pull("llama3.2")
@@ -126,13 +175,20 @@ class RunCypher:
         return llm
 
     def ragCaller(self):
+        """
+        Just returns the rag results depending on the user input.
+        """
         rag = rag4llm.RunLocalRAG()
         result = rag.runChromaRAG(user_input)
-        print("RAG result: ", result)
+        #print("RAG result: ", result)
         return result
 
     def cypherQuery(self):
-
+        """
+            The so called collective method where pieces come together.
+            main method calls this method and runs the produced cypher query in the neo4j session.
+            The prompts are written here with name prompt. task_description is not the prompt.
+        """
         self.graph.refresh_schema()
         schema = self.graph.schema
         ragResult = self.ragCaller()
@@ -155,8 +211,9 @@ class RunCypher:
             """
 
         llm = self.local_llm()
-        openai_llm = self.openai_llm()
+        #openai_llm = self.openai_llm()
         #anthropic_llm = self.unthropic_llm(user_input, task_description)
+        #groq_llm = self.groq_llm()
 
         #print("llm created")
 
@@ -164,13 +221,13 @@ class RunCypher:
         prompt = ChatPromptTemplate.from_messages(
                 [
                     SystemMessagePromptTemplate.from_template(
-                        "You are an assistant specialized in generating Cypher queries based on IFC model knowledge graph derived schema and schema summary result you receive."
+                        "You are an assistant specialized in generating Cypher queries based on IFC model knowledge graph derived schema and schema-summary result you receive."
                     ),
                     HumanMessagePromptTemplate.from_template(
                         "Given the following IFC model knowledge graph related schema:\n\n{schema}\n\n and the user question related summary of the schema:\n\n{ragResult}\n\n,"
                         "Generate a Cypher query to answer the user's question based on the provided schema and the ragResults."
                         "Only use the node types and attributes that appear in the schema and the ragResult."
-                        "In order to create the structure of the cypher query only write the node names and don't use any relationship names. Such as, (a)-[]->(b)."
+                        "In order to create the structure of the cypher query only write the node names and don't use any relationships."
                         "When you do not know the specific names of the nodes, you can use generic nodes."
                         "When returning the query results, return the global id of the queried node/s. Such as, w.GlobalId."
                         "Always produce only one Cypher query. "
@@ -180,10 +237,7 @@ class RunCypher:
                 ]
             )
         
-#Here is the schema of the ifc model's knowledge graph graph: {schema}\n\n based on the nodes and relationships in the ifc model's knowledge graph
-#                        "For returning the values, such as global id, height, width, directly use .-notation. Corresponsingly, w.GlobalId, w.OverallHeight, w.OverallWidth. "
         
-
         
         cypher_chain = (
             RunnablePassthrough.assign(
@@ -221,6 +275,9 @@ class RunCypher:
                 print("Validation result: ", result.data())
 
     def invalidCyHandler(self, query, error):
+        """
+        This method is meant to correct the invalid cypher query, however it is not used due to very long generation time.
+        """
         llm = self.local_llm()
         schema = self.graph.schema
         prompt = ChatPromptTemplate.from_messages(

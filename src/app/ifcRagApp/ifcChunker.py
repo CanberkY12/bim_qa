@@ -4,11 +4,8 @@
 #           ! When the code runs the chunks are saved in local directory. 
 
 
-import ifcopenshell.util
-import ifcopenshell.util.element
 
 import ifcopenshell
-import ifcopenshell.geom
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 # neo4j connection for method testing is to be erased later on.
@@ -16,9 +13,7 @@ import dotenv
 from neo4j import GraphDatabase
 from langchain_community.graphs import Neo4jGraph
 
-
-
-# Load the IFC file
+# Just for now the ifc file is hardcoded, but it will be taken from the user input.
 ifc_file = ifcopenshell.open("C:/Users/berky/Downloads/small (1).ifc")
 
 
@@ -50,7 +45,10 @@ class IfcElement:
         return driver
     
     def save_chunk(self, chunk):
-        """Save a chunk to a file."""
+        """
+        Save a chunk to the specific local directory.
+        In this case the data folder in the project.
+        """
         output_path = "C:/Users/berky/oxide/data/chunks.txt"
         with open(output_path, "a") as file:
             file.write(chunk + "\n")
@@ -119,6 +117,8 @@ class IfcElement:
             print("Error while querying the nodes and relationships from db: ", e)
         finally:
             session.close()
+
+
     # Extract relevant data from IFC elements and prepare for chunking
     # This method was used for kg depending chunking but it is not used in ifcopenshell implementation.
     def extract_ifc_data(self):
@@ -175,7 +175,7 @@ class IfcElement:
         return "\n".join(data)  # Combine all data into a single string
     
     def create_chunks(self):
-        """This cypher query gives the structure from building to the elements in the building.
+        """This cypher query gives the structure from building to the elements in the building as a path.
         MATCH (n:IfcBuilding)-[r]->(m:IfcRelAggregates)-[t]->(k)-[y]->(l:IfcRelContainedInSpatialStructure)-[u]->(j)
         RETURN DISTINCT labels(n), r, labels(m), t, labels(k), y, labels(l), u, labels(j)
 
@@ -274,6 +274,7 @@ class IfcElement:
         return chunks
 
 # Create an instance of the IfcElement class
+# this part must get the ifc file from the user input and then run the chunking.
 ifc_element = IfcElement(ifc_file)
 #for element in ifc_file:
 #    print(element,": " ,element.get_info())

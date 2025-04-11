@@ -23,8 +23,7 @@ import * as OBC from "@thatopen/components";
 import * as OBCF from "@thatopen/components-front";
 import { FragmentsGroup } from "@thatopen/fragments";
 import { viewport } from '../../thatOpenSrc/engine_ui-components/packages/obc/src/components/tables/ElementProperties/example';
-import sendInput from "C:/Users/berky/oxide/src/app/llmGraphQL/promptreceiver.js"
-import sendQuery from "C:/Users/berky/oxide/src/app/server.js"
+import sendInput from "C:/Users/berky/oxide/src/app/llm4Cypher/promptreceiver.js"
 import NeoVis, { NeovisConfig } from "neovis.js/dist/neovis.js";
 
 
@@ -40,6 +39,10 @@ export default function Home() {
   const [fragments, setFragments] = useState<any>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+
+  // This is neovis.js graph visualization implementation part.
+  // Highly exhaustive and causes lagging on the website, therefore not called.
+  // The idea was to show the queried graph nodes and allow users to interact, even edit the query.
   useEffect(() => {
     if (!containerRef.current) return undefined;
     console.log("containerRef.current", containerRef.current);
@@ -48,9 +51,9 @@ export default function Home() {
       //trust: "TRUST_SYSTEM_CA_SIGNED_CERTIFICATES",
       containerId: containerRef.current.id,
       neo4j: {
-      serverUrl: "neo4j://be20d4fc.databases.neo4j.io",
-      serverUser: "neo4j",
-      serverPassword: "sz7lL8-kJT9q5e7jN-j6VGoaEJ4XEXNRgHgJJugMp0U",
+      serverUrl: "...",
+      serverUser: "...",
+      serverPassword: "...",
       },
       visConfig: {
       nodes: {
@@ -89,7 +92,9 @@ export default function Home() {
   }, []);
 
 
- 
+  // Here the thatOpen company's three.js based ifc viewer components are implemented.
+  // Some methods are editted accordingly with the needs.
+  // Ifc loader, json file downloder, proeprty panel and highlighter all based on thatOpen and implemented here.
   useEffect(() => {
     BUI.Manager.init();
     
