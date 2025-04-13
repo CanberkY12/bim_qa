@@ -6,6 +6,7 @@
 #       The following libraries are used: 
 #
 
+import os
 import bsdd
 
 import json
@@ -14,9 +15,9 @@ from langchain_community.graphs import Neo4jGraph
 
 class ExternalLibUtils:
     def __init__(self):
-        self.url="neo4j+s://be20d4fc.databases.neo4j.io"
-        self.username="neo4j"
-        self.password="sz7lL8-kJT9q5e7jN-j6VGoaEJ4XEXNRgHgJJugMp0U"
+        self.url=os.getenv("url")
+        self.username=os.getenv("username")
+        self.password=os.getenv("password")
         self.driver = self.connect()
         self.graph = Neo4jGraph(url=self.url,username=self.username,password=self.password)
 

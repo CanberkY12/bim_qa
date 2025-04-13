@@ -68,7 +68,7 @@ class RunCypher:
 
     def connect(self):
         driver = GraphDatabase.driver(self.url, auth=(self.username, self.password))
-        print("Connected to the Neo4j graph.")
+        #print("Connected to the Neo4j graph.")
         return driver
 
 
@@ -96,7 +96,7 @@ class RunCypher:
     
     def openai_llm(self):
         model = ChatOpenAI(model="gpt-4o", temperature=0.0, max_tokens=None, timeout=None, max_retries=1)
-        print("OpenAI model created...")
+        #print("OpenAI model created...")
         return model
     
     def unthropic_llm(self, user_input, task_description):
@@ -105,7 +105,7 @@ class RunCypher:
         client = anthropic.Anthropic(
         api_key = claude_key,
         )
-        print("Anthropic model created...")
+        #print("Anthropic model created...")
         Prompt = user_input
 
         message = client.messages.create(
@@ -156,7 +156,7 @@ class RunCypher:
         In the current setting NVidia GTX 3050Ti 4Gb gpu is used with cuda support. 4gb is a bit low for this model (a bottleneck) but runs just fine?.
         """
         ollama.pull("hf.co/berky12/Qwen2.5-Coder-7B-Instruct-ifc2cypher:latest")
-        print("Ollama model created...")
+        #print("Ollama model created...")
         #ollama.pull("llama3.2")
         llm = OllamaLLM(
             model="hf.co/berky12/Qwen2.5-Coder-7B-Instruct-ifc2cypher:latest",
@@ -369,4 +369,3 @@ if user_input:
     cypher = RunCypher(user_input)
     # Either use main() which does everything including cypherQuery()
     result = cypher.main()  
-    print("Final result:", result)

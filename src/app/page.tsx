@@ -41,7 +41,7 @@ export default function Home() {
 
 
   // This is neovis.js graph visualization implementation part.
-  // Highly exhaustive and causes lagging on the website, therefore not called.
+  // Highly exhaustive and causes lagging on the website, so not called.
   // The idea was to show the queried graph nodes and allow users to interact, even edit the query.
   useEffect(() => {
     if (!containerRef.current) return undefined;
@@ -79,7 +79,7 @@ export default function Home() {
     const viz = new NeoVis(config);
 
     // Render the graph
-    //viz.render();
+    viz.render();
 
     // Optional: Add event listeners
     viz.registerOnEvent("completed" as any, () => {
@@ -468,7 +468,7 @@ export default function Home() {
         <h1>Graph Visualization</h1>      
         <div
           id="graph-container"
-          ref={containerRef}
+          //ref={containerRef}
           style={{ width: "50%", height: "40vh", border: "1px solid #ccc", backgroundColor: "#fff" }}
         ></div>
       </div>

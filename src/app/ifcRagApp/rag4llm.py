@@ -23,12 +23,12 @@ class RunLocalRAG:
         # Obviously everything is local, hence the vector store.
         persist_directory = "C:/Users/berky/oxide/data/chroma"
         
-        print("Initializing ChromaDB client...")
+        #print("Initializing ChromaDB client...")
         client = chromadb.PersistentClient(path=persist_directory)
         
         # Check the available collection/s
         collections = client.list_collections()
-        print(f"Available collections ({len(collections)}):")
+        #print(f"Available collections ({len(collections)}):")
         for coll in collections:
             print(f"- {coll.name}")
 
@@ -38,7 +38,7 @@ class RunLocalRAG:
         collection_name = "ifc_narratives"
         try:
             collection = client.get_collection(collection_name)
-            print(f"Collection found: {collection_name} with {collection.count()} documents")
+            #print(f"Collection found: {collection_name} with {collection.count()} documents")
             
   
             import time
