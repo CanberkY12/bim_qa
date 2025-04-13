@@ -65,7 +65,7 @@ After cloning and compiling, navigating to /src directory and running "pnpm run 
 
 # License
 
-MIT
+MIT License
 
 # Related Literature
 
