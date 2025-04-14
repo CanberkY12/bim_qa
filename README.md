@@ -26,18 +26,17 @@ The installation requires several open source repos, node.js and python packages
 ### 1. UI Components
 - **[ThatOpen/engine_ui-components](https://github.com/ThatOpen/engine_ui-components)**
   - License: MIT
-  - Description: Provides reusable and modern UI components.
 
 ### 2. IFC to LPG Conversion
 - **[marwiss/IFC-graph](https://github.com/marwiss/IFC-graph)**
   - License: GNU General Public License v3.0 (GPL-3.0)
-  - Description: Converts Industry Foundation Classes (IFC) to Linked Property Graphs (LPG).
+  - Converts Industry Foundation Classes (IFC) to Linked Property Graphs (LPG).
   - This code is not modified or distributed. Only used from app by calling with childprocess.spawn, therefore this repository is nout bound to be licensed under GPL-3.0.
 
 ### 3. Alternative Parser
 - **[seb-esser/ConMan](https://github.com/seb-esser/ConMan)**
   - License: MIT
-  - Description: A modular IFC-to-LPG converter with alternative logic.
+  - A modular IFC-to-LPG converter with alternative logic.
 
 Each project retains its respective license and intellectual property rights. See their individual repositories for more details.
 
