@@ -1,6 +1,6 @@
 # IFC/BIM Query Web API
 
-This repository contains a small RESTFULL web api that is allowing users to upload their Ifc based BIM and query information using the llm chatbox.
+This repository contains a small BIM Web API that is allowing users to upload their Ifc based BIM and query information using the llm chatbox.
 
 This project is a voluntary based study poject and it is not for any commercial purposes. The only motivation is to develop skills in BIM software development and IFC/BIM information management.
 
